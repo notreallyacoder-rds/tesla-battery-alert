@@ -42,6 +42,7 @@ jobs:
           TESLA_CLIENT_ID:     ${{ secrets.TESLA_CLIENT_ID }}
           TESLA_CLIENT_SECRET: ${{ secrets.TESLA_CLIENT_SECRET }}
           TESLA_REFRESH_TOKEN: ${{ secrets.TESLA_REFRESH_TOKEN }}
+          TESLA_VEHICLE_ID:    ${{ secrets.TESLA_VEHICLE_ID }}
           NTFY_TOPIC:          ${{ secrets.NTFY_TOPIC }}
         run: python battery_alert.py
 
