@@ -1,0 +1,48 @@
+name: Tesla Weekly Battery Summary
+
+on:
+  schedule:
+    - cron: '0 19 * * 5'   # Friday 19:00 UTC = noon PDT
+  workflow_dispatch:         # trigger manually any time
+
+jobs:
+  weekly-summary:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Restore state
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            battery_state.json
+            tesla_tokens.json
+            battery_history.json
+          key: tesla-state-${{ github.run_id }}
+          restore-keys: |
+            tesla-state-
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Send weekly summary
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python weekly_summary.py
+
+      - name: Save state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            battery_state.json
+            tesla_tokens.json
+            battery_history.json
+          key: tesla-state-${{ github.run_id }}
