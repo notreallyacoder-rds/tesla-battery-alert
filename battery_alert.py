@@ -43,6 +43,7 @@ def load_tokens():
     if os.path.exists(TOKENS_FILE):
         with open(TOKENS_FILE) as f:
             return json.load(f)
+    # Fall back to env var
     rt = os.environ.get("TESLA_REFRESH_TOKEN", "")
     return {"refresh_token": rt}
 
@@ -80,6 +81,30 @@ def save_state(state):
         json.dump(state, f)
 
 
+# ── history helpers ──────────────────────────────────────────────────────────
+
+HISTORY_FILE   = "battery_history.json"
+MAX_HISTORY    = 336   # 7 days × 48 half-hour checks
+
+def load_history():
+    if os.path.exists(HISTORY_FILE):
+        with open(HISTORY_FILE) as f:
+            return json.load(f)
+    return []
+
+
+def append_history(level, charging_state):
+    history = load_history()
+    history.append({
+        "ts":       time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "level":    level,
+        "charging": charging_state,
+    })
+    history = history[-MAX_HISTORY:]   # keep rolling 7-day window
+    with open(HISTORY_FILE, "w") as f:
+        json.dump(history, f)
+
+
 # ── ntfy push ────────────────────────────────────────────────────────────────
 
 def send_push(topic, vehicle_name, battery_level):
@@ -112,6 +137,9 @@ def wake_vehicle(vehicle_id, headers):
                 headers=headers,
                 timeout=15,
             )
+            if resp.status_code == 403:
+                print("  wake_up: 403 (scope limitation) — proceeding with last-known state.")
+                return False
             if resp.ok:
                 state = resp.json().get("response", {}).get("state", "")
                 print(f"  wake_up attempt {attempt}: state={state}")
@@ -129,7 +157,7 @@ def wake_vehicle(vehicle_id, headers):
 
 def main():
     ntfy_topic = os.environ["NTFY_TOPIC"]
-    vehicle_id = os.environ["TESLA_VEHICLE_ID"]
+    vehicle_id = os.environ["TESLA_VEHICLE_ID"]   # numeric ID — no listing needed
 
     tokens = load_tokens()
     access_token = get_access_token(tokens)
@@ -142,7 +170,7 @@ def main():
     if not awake:
         print("  Proceeding with last-known charge state (vehicle may be asleep).")
 
-    print("Fetching vehicle data...")
+    print("Fetching charge state...")
     resp = requests.get(
         f"{BASE_URL}/api/1/vehicles/{vehicle_id}/vehicle_data",
         params={"endpoints": "charge_state"},
@@ -164,6 +192,7 @@ def main():
     state = load_state()
 
     if battery_level > THRESHOLD and state["notified"]:
+        # Battery recovered — reset notification flag
         state["notified"] = False
         print(f"Battery above threshold ({THRESHOLD}%), resetting notification flag.")
 
@@ -177,6 +206,7 @@ def main():
     else:
         print(f"Battery at {battery_level}% — above threshold, all good.")
 
+    append_history(battery_level, charging_state)
     state["last_level"] = battery_level
     save_state(state)
 
