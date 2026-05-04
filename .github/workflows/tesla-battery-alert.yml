@@ -21,6 +21,7 @@ jobs:
           path: |
             battery_state.json
             tesla_tokens.json
+            battery_history.json
           # Falls back to most recent matching cache if exact key not found
           key: tesla-state-${{ github.run_id }}
           restore-keys: |
@@ -54,4 +55,5 @@ jobs:
           path: |
             battery_state.json
             tesla_tokens.json
+            battery_history.json
           key: tesla-state-${{ github.run_id }}
