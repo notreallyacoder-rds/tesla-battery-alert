@@ -1,0 +1,56 @@
+name: Tesla Battery Alert
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'   # every 30 minutes, 24/7
+  workflow_dispatch:           # lets you trigger manually from the Actions tab
+
+jobs:
+  check-battery:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── Check out repo (battery_alert.py lives here) ───────────────────
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      # ── Restore state files from previous run ─────────────────────────
+      - name: Restore state
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            battery_state.json
+            tesla_tokens.json
+          # Falls back to most recent matching cache if exact key not found
+          key: tesla-state-${{ github.run_id }}
+          restore-keys: |
+            tesla-state-
+
+      # ── Set up Python ──────────────────────────────────────────────────
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # ── Install dependencies ───────────────────────────────────────────
+      - name: Install dependencies
+        run: pip install requests
+
+      # ── Run the battery check ──────────────────────────────────────────
+      - name: Check Tesla battery
+        env:
+          TESLA_CLIENT_ID:     ${{ secrets.TESLA_CLIENT_ID }}
+          TESLA_CLIENT_SECRET: ${{ secrets.TESLA_CLIENT_SECRET }}
+          TESLA_REFRESH_TOKEN: ${{ secrets.TESLA_REFRESH_TOKEN }}
+          NTFY_TOPIC:          ${{ secrets.NTFY_TOPIC }}
+        run: python battery_alert.py
+
+      # ── Save updated state for next run ────────────────────────────────
+      - name: Save state
+        if: always()    # save even if the check step fails
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            battery_state.json
+            tesla_tokens.json
+          key: tesla-state-${{ github.run_id }}
