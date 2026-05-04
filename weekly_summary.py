@@ -36,7 +36,8 @@ def send_push(topic, title, message):
             timeout=15,
         )
         r.raise_for_status()
-        print(f"Summary sent:\n{message}")
+        print(f"Summary sent:
+{message}")
     except Exception as e:
         print(f"Failed to send summary: {e}")
         sys.exit(1)
@@ -98,12 +99,18 @@ def main():
     charge_str  = f"{charge_sessions} charging session{'s' if charge_sessions != 1 else ''}"
 
     message = (
-        f"Week of {date_range} ({len(history)} checks)\n"
-        f"\n"
-        f"Avg battery:  {avg_level}%\n"
-        f"Range:        {min_level}% – {max_level}%\n"
-        f"Low point:    {min_level}% on {min_label}\n"
-        f"Low alerts:   {low_str}\n"
+        f"Week of {date_range} ({len(history)} checks)
+"
+        f"
+"
+        f"Avg battery:  {avg_level}%
+"
+        f"Range:        {min_level}% – {max_level}%
+"
+        f"Low point:    {min_level}% on {min_label}
+"
+        f"Low alerts:   {low_str}
+"
         f"Charging:     {charge_str}"
     )
 
