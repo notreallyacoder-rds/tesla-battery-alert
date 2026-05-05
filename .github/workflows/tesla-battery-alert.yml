@@ -51,6 +51,10 @@ jobs:
         run: python battery_alert.py
 
       # ── Save updated state for next run ────────────────────────────────
+      - name: Ensure history file exists
+        if: always()
+        run: test -f battery_history.json || echo '[]' > battery_history.json
+
       - name: Save state
         if: always()    # save even if the check step fails
         uses: actions/cache/save@v4
