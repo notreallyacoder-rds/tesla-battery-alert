@@ -5,6 +5,9 @@ on:
     - cron: '*/30 * * * *'   # every 30 minutes, 24/7
   workflow_dispatch:           # lets you trigger manually from the Actions tab
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   check-battery:
     runs-on: ubuntu-latest
