@@ -64,6 +64,11 @@ def get_access_token(tokens):
     resp.raise_for_status()
     new_tokens = resp.json()
     save_tokens(new_tokens)
+    # Write new refresh token to file so the workflow can update the GitHub secret
+    new_rt = new_tokens.get("refresh_token", "")
+    if new_rt:
+        with open("new_refresh_token.txt", "w") as f:
+            f.write(new_rt)
     return new_tokens["access_token"]
 
 
