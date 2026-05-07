@@ -10,6 +10,9 @@ env:
 
 jobs:
   check-battery:
+    permissions:
+      contents: write
+      secrets: write
     runs-on: ubuntu-latest
 
     steps:
@@ -21,8 +24,7 @@ jobs:
         with:
           path: |
             battery_state.json
-            tesla_tokens.json
-            battery_history.json
+              battery_history.json
           key: tesla-state-${{ github.run_id }}
           restore-keys: |
             tesla-state-
@@ -43,6 +45,21 @@ jobs:
           NTFY_TOPIC:          ${{ secrets.NTFY_TOPIC }}
         run: python battery_alert.py
 
+
+      - name: Rotate refresh token secret
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -f new_refresh_token.txt ]; then
+            NEW_TOKEN=$(cat new_refresh_token.txt)
+            if [ -n "$NEW_TOKEN" ]; then
+              echo "$NEW_TOKEN" | gh secret set TESLA_REFRESH_TOKEN -R ${{ github.repository }}
+              echo "✅ Refresh token rotated successfully"
+            fi
+          else
+            echo "ℹ️  No new token file found (script may have failed before token exchange)"
+          fi
       - name: Ensure history file exists
         if: always()
         run: test -f battery_history.json || echo '[]' > battery_history.json
@@ -53,6 +70,5 @@ jobs:
         with:
           path: |
             battery_state.json
-            tesla_tokens.json
-            battery_history.json
+              battery_history.json
           key: tesla-state-${{ github.run_id }}
